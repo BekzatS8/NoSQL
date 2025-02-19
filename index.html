@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Квартиры</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <h1>Список квартир</h1>
+    <label>Фильтр по цене: </label>
+    <input id="minPrice" placeholder="Мин. цена" type="number">
+    <input id="maxPrice" placeholder="Макс. цена" type="number">
+    <label>Количество комнат: </label>
+    <input id="rooms" placeholder="Комнаты" type="number">
+    <button onclick="fetchApartments()">Применить</button>
+    
+    <ul id="apartments-list"></ul>
+
+    <h2>Добавить квартиру</h2>
+    <input id="title" placeholder="Название">
+    <input id="price" placeholder="Цена" type="number">
+    <input id="roomsInput" placeholder="Комнаты" type="number">
+    <button onclick="addApartment()">Добавить</button>
+
+    <script>
+        async function fetchApartments() {
+            const minPrice = document.getElementById('minPrice').value;
+            const maxPrice = document.getElementById('maxPrice').value;
+            const rooms = document.getElementById('rooms').value;
+            const query = new URLSearchParams({ minPrice, maxPrice, rooms }).toString();
+            const response = await fetch(`http://localhost:3000/apartments?${query}`);
+            const apartments = await response.json();
+            const list = document.getElementById('apartments-list');
+            list.innerHTML = '';
+            apartments.forEach(apartment => {
+                const li = document.createElement('li');
+                li.innerHTML = `${apartment.title} - ${apartment.price}₸ (${apartment.rooms} комн.)
+                    <button onclick="deleteApartment('${apartment._id}')">Удалить</button>
+                    <button onclick="editApartment('${apartment._id}', '${apartment.title}', ${apartment.price}, ${apartment.rooms})">Редактировать</button>`;
+                list.appendChild(li);
+            });
+        }
+
+        async function addApartment() {
+            const title = document.getElementById('title').value;
+            const price = document.getElementById('price').value;
+            const rooms = document.getElementById('roomsInput').value;
+            await fetch('http://localhost:3000/apartments', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title, price: Number(price), rooms: Number(rooms) })
+            });
+            fetchApartments();
+        }
+
+        async function deleteApartment(id) {
+            await fetch(`http://localhost:3000/apartments/${id}`, { method: 'DELETE' });
+            fetchApartments();
+        }
+
+        function editApartment(id, title, price, rooms) {
+            const newTitle = prompt('Новое название:', title);
+            const newPrice = prompt('Новая цена:', price);
+            const newRooms = prompt('Количество комнат:', rooms);
+            if (newTitle && newPrice && newRooms) {
+                updateApartment(id, newTitle, newPrice, newRooms);
+            }
+        }
+
+        async function updateApartment(id, title, price, rooms) {
+            await fetch(`http://localhost:3000/apartments/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title, price: Number(price), rooms: Number(rooms) })
+            });
+            fetchApartments();
+        }
+
+        fetchApartments();
+    </script>
+</body>
+</html>
